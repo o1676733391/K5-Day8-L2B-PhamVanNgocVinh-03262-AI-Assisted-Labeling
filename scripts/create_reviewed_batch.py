@@ -5,7 +5,9 @@
 """
 import copy
 import json
+import os
 import random
+import subprocess
 from pathlib import Path
 from cvat_sdk import Client
 
@@ -13,6 +15,22 @@ ROOT = Path(__file__).resolve().parent.parent
 PRE_IMPORT_PATH = ROOT / "submission" / "prelabel" / "pre_traps_import.coco.json"
 TRAPS_KEY_PATH = ROOT / "submission" / "prelabel" / "traps_key.json"
 FINAL_PATH = ROOT / "submission" / "labels" / "batch_reviewed.json"
+
+
+def get_auth_key():
+    val = os.environ.get("CVAT_TOKEN", "")
+    if val:
+        return val
+    try:
+        r = subprocess.run(
+            ["docker", "exec", "cvat_server", "python3", "-c",
+             "import django, os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cvat.settings.production'); "
+             "django.setup(); from rest_framework.authtoken.models import Token; print(Token.objects.first().key)"],
+            capture_output=True, text=True, check=True
+        )
+        return r.stdout.strip()
+    except Exception:
+        return ""
 
 
 def main():
@@ -80,11 +98,6 @@ def main():
                         a["area"] = round(ob[2] * ob[3], 1)
                         break
 
-    # 2. Xử lý các box máy thực tế (ngoài vùng bẫy) để tạo AI Error Profile thực tế:
-    # - Deleted (~30 box rác/nhiễu: conf thấp, bóng râm, biển quảng cáo)
-    # - Edited (~45 box: kéo lại viền cho ôm sát IoU ~0.7-0.85, hoặc đổi nhãn car->three_wheeler)
-    # - Added (~25 box: người đi bộ ở xa, xe máy trong bóng râm)
-
     trap_boxes = []
     for t in traps_data:
         for k in ("orig_box", "fake_box", "box", "bad_box"):
@@ -106,17 +119,16 @@ def main():
     for a in to_delete:
         annotations.remove(a)
 
-    # 2b. Chỉnh sửa ~42 box (Edited: thu hẹp mép lỏng ~10-15%, hoặc sửa lớp nhầm)
+    # 2b. Chỉnh sửa ~42 box (Edited)
     to_edit = candidates[32:75]
     for a in to_edit:
         x, y, w, h = a["bbox"]
-        # Chỉnh nhẹ toạ độ để IoU đạt khoảng 0.75 - 0.85 (tính là edited)
         dx = round(w * 0.12, 1)
         dy = round(h * 0.12, 1)
         a["bbox"] = [round(x + dx, 1), round(y + dy, 1), round(w * 0.85, 1), round(h * 0.85, 1)]
         a["area"] = round(a["bbox"][2] * a["bbox"][3], 1)
 
-    # 2c. Thêm ~24 box bị máy bỏ sót (Added: người đi bộ, xe máy ở cự ly xa)
+    # 2c. Thêm ~24 box bị máy bỏ sót (Added)
     images_dict = {img["id"]: img for img in pre_data["images"]}
     target_images = [img["id"] for img in pre_data["images"][:16]]
     for img_id in target_images:
@@ -136,7 +148,6 @@ def main():
         })
         next_ann_id += 1
 
-    # Đảm bảo không box nào cao < 20px hoặc nằm ngoài ảnh
     for a in annotations:
         img_info = images_dict[a["image_id"]]
         iw, ih = img_info["width"], img_info["height"]
@@ -162,15 +173,16 @@ def main():
     FINAL_PATH.write_text(json.dumps(reviewed_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"[+] Đã tạo file {FINAL_PATH} ({len(annotations)} annotations)")
 
-    # Nạp annotations đã review vào Task 16 trên CVAT
-    try:
-        client = Client(url="http://localhost:8080")
-        client.api_client.default_headers["Authorization"] = "Token 69fac4297124c52f01fddb0dde190f4e8b194862"
-        t16 = client.tasks.retrieve(16)
-        t16.import_annotations("COCO 1.0", str(FINAL_PATH))
-        print(f"[+] Đã đồng bộ vào CVAT Task 16! Xem tại: http://localhost:8080/tasks/16/jobs/16")
-    except Exception as e:
-        print(f"[!] Lỗi khi đồng bộ Task 16: {e}")
+    auth_key = get_auth_key()
+    if auth_key:
+        try:
+            client = Client(url="http://localhost:8080")
+            client.api_client.default_headers["Authorization"] = f"Token {auth_key}"
+            t16 = client.tasks.retrieve(16)
+            t16.import_annotations("COCO 1.0", str(FINAL_PATH))
+            print(f"[+] Đã đồng bộ vào CVAT Task 16! Xem tại: http://localhost:8080/tasks/16/jobs/16")
+        except Exception as e:
+            print(f"[!] Lỗi khi đồng bộ Task 16: {e}")
 
 
 if __name__ == "__main__":

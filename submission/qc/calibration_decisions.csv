@@ -1,1 +1,5 @@
 case_id,image,nguon,van_de,quyet_dinh,quy_tac_ghi_vao_guideline,phien_ban_guideline
+CAL-01,img_001.jpg,loi_may,YOLO26 nhầm xích lô thành truck do có khung mui rộng,Gán là three_wheeler ôm cả xe và mui; tách riêng người lái và khách,Xích lô và xe ba bánh có mui luôn là three_wheeler; người lái và khách vẽ box person riêng,v1.1
+CAL-02,img_008.jpg,cau_hoi_mo,Câu hỏi mở 3: Xe đạp chở rổ hàng nhô ra ngoài xe có tính vào box xe không,Hàng hoá gắn cố định trên giỏ/giá đèo hàng được tính vào box xe,Hàng chở cố định gắn vào khung xe tính vào box bicycle/motorbike; hàng nhô rời không tính,v1.1
+CAL-03,img_034.jpg,bay_lot,Bẫy missing xe máy ở xa bị lọt do chỉ duyệt box máy có sẵn,Tắt layer nhãn máy quét ảnh trước; thêm box xe máy > 20px,Bắt buộc quét ảnh trước khi bật nhãn máy; xe nhìn rõ chiều cao >= 20px phải gán đủ,v1.1
+CAL-04,img_018.jpg,can_review,Cụm xe máy đông đúc ở hậu cảnh khó phân tách ranh giới,Gộp cụm xe nhỏ ở xa thành 1 vùng ignore_region,Cụm xe máy dày đặc ở xa cao dưới 20px không vẽ từng xe mà dùng ignore_region,v1.1

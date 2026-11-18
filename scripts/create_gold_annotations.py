@@ -2,11 +2,12 @@
 và đồng bộ nạp thẳng vào Task 15 trên CVAT.
 """
 import json
+import os
+import subprocess
 from pathlib import Path
 from cvat_sdk import Client
 
 ROOT = Path(__file__).resolve().parent.parent
-TAXONOMY_PATH = ROOT / "submission" / "taxonomy.json"
 GOLD_DIR = ROOT / "work" / "tasks" / "gold"
 OUT_PATH = ROOT / "submission" / "labels" / "gold_manual.json"
 
@@ -22,17 +23,11 @@ CATEGORIES = [
 ]
 CAT_MAP = {c["name"]: c["id"] for c in CATEGORIES}
 
-# Định nghĩa các annotations chuẩn xác theo guideline v1.0
-# Tọa độ [x, y, w, h] số nguyên pixel, ôm sát viền
 ANNOTATIONS_BY_IMAGE = {
     "img_001.jpg": [
-        # Cyclo lớn phía trước (thùng + khung + mui)
         {"cat": "three_wheeler", "bbox": [185, 332, 345, 185], "can_review": False},
-        # Người lái xích lô phía sau
         {"cat": "person", "bbox": [554, 366, 52, 85], "can_review": False},
-        # Khách ngồi trên xích lô
         {"cat": "person", "bbox": [255, 368, 15, 20], "can_review": True},
-        # Xe máy và người đi xe máy bên phải
         {"cat": "motorbike", "bbox": [947, 370, 77, 102], "can_review": False},
         {"cat": "person", "bbox": [948, 353, 38, 42], "can_review": False},
         {"cat": "motorbike", "bbox": [905, 382, 54, 82], "can_review": False},
@@ -40,40 +35,28 @@ ANNOTATIONS_BY_IMAGE = {
         {"cat": "motorbike", "bbox": [925, 380, 62, 88], "can_review": False},
         {"cat": "person", "bbox": [639, 382, 28, 56], "can_review": False},
         {"cat": "motorbike", "bbox": [555, 399, 52, 75], "can_review": False},
-        # Xe xích lô / ba gác thứ hai ở làn giữa
         {"cat": "three_wheeler", "bbox": [637, 404, 28, 42], "can_review": True},
         {"cat": "motorbike", "bbox": [121, 406, 58, 42], "can_review": False},
-        # Cụm người và xe nhỏ mờ ở xa phía hậu cảnh
         {"cat": "ignore_region", "bbox": [610, 385, 230, 45], "can_review": False},
     ],
     "img_012.jpg": [
-        # Tuk-tuk Bangkok bên phải phía trước
         {"cat": "three_wheeler", "bbox": [540, 375, 456, 358], "can_review": False},
-        # Người ngồi trong xe tuk-tuk bên phải
         {"cat": "person", "bbox": [707, 291, 28, 95], "can_review": True},
-        # Tuk-tuk ở giữa làn
         {"cat": "three_wheeler", "bbox": [365, 167, 224, 280], "can_review": False},
         {"cat": "person", "bbox": [456, 267, 49, 210], "can_review": False},
-        # Taxi màu hồng / xanh (ô tô con)
         {"cat": "car", "bbox": [18, 167, 274, 240], "can_review": False},
         {"cat": "car", "bbox": [588, 177, 253, 235], "can_review": False},
         {"cat": "car", "bbox": [441, 79, 199, 208], "can_review": False},
         {"cat": "car", "bbox": [238, 56, 175, 210], "can_review": False},
         {"cat": "car", "bbox": [261, 0, 337, 58], "can_review": False},
-        # Người đi bộ trên cầu vượt / vỉa hè
         {"cat": "person", "bbox": [590, 0, 49, 134], "can_review": False},
         {"cat": "person", "bbox": [748, 1, 47, 147], "can_review": False},
     ],
     "img_020.jpg": [
-        # Chiếc Tuk-tuk lớn góc cận cảnh phía trước
         {"cat": "three_wheeler", "bbox": [215, 197, 370, 352], "can_review": False},
-        # Người lái tuk-tuk
         {"cat": "person", "bbox": [445, 250, 97, 148], "can_review": False},
-        # Người ngồi bên cạnh / khách
         {"cat": "person", "bbox": [312, 267, 96, 144], "can_review": False},
-        # Chiếc Tuk-tuk thứ hai phía sau bên phải
         {"cat": "three_wheeler", "bbox": [719, 185, 208, 252], "can_review": False},
-        # Ô tô và xe tải đỗ xung quanh
         {"cat": "car", "bbox": [18, 240, 258, 189], "can_review": False},
         {"cat": "car", "bbox": [624, 211, 124, 101], "can_review": False},
         {"cat": "car", "bbox": [889, 177, 92, 87], "can_review": False},
@@ -81,21 +64,16 @@ ANNOTATIONS_BY_IMAGE = {
         {"cat": "bus", "bbox": [952, 137, 72, 86], "can_review": False},
     ],
     "img_036.jpg": [
-        # Xe máy và người điều khiển ở trung tâm
         {"cat": "motorbike", "bbox": [472, 415, 135, 161], "can_review": False},
         {"cat": "person", "bbox": [485, 245, 159, 312], "can_review": False},
-        # Xe máy bên cạnh và người lái
         {"cat": "motorbike", "bbox": [331, 370, 75, 111], "can_review": False},
         {"cat": "person", "bbox": [319, 255, 102, 199], "can_review": False},
         {"cat": "person", "bbox": [372, 258, 57, 96], "can_review": False},
-        # Xích lô / xe ba bánh chở khách phía xa
         {"cat": "three_wheeler", "bbox": [759, 310, 65, 55], "can_review": True},
         {"cat": "person", "bbox": [786, 313, 20, 44], "can_review": False},
         {"cat": "person", "bbox": [806, 315, 16, 44], "can_review": False},
-        # Người đi bộ bên đường
         {"cat": "person", "bbox": [183, 289, 16, 42], "can_review": False},
         {"cat": "motorbike", "bbox": [964, 343, 54, 41], "can_review": False},
-        # Cụm phương tiện nhỏ ở xa bên trái
         {"cat": "ignore_region", "bbox": [660, 305, 90, 45], "can_review": False},
     ],
 }
@@ -106,6 +84,22 @@ IMG_DIMS = {
     "img_020.jpg": (1024, 682),
     "img_036.jpg": (1024, 576),
 }
+
+
+def get_auth_key():
+    val = os.environ.get("CVAT_TOKEN", "")
+    if val:
+        return val
+    try:
+        r = subprocess.run(
+            ["docker", "exec", "cvat_server", "python3", "-c",
+             "import django, os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cvat.settings.production'); "
+             "django.setup(); from rest_framework.authtoken.models import Token; print(Token.objects.first().key)"],
+            capture_output=True, text=True, check=True
+        )
+        return r.stdout.strip()
+    except Exception:
+        return ""
 
 
 def main():
@@ -153,16 +147,17 @@ def main():
     OUT_PATH.write_text(json.dumps(coco_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"[+] Đã ghi file {OUT_PATH} ({len(images)} ảnh, {len(annotations)} annotations)")
 
-    # Nạp vào Task 15 trên CVAT
-    print("[*] Đang nạp annotations vào Task 15 trên CVAT...")
-    try:
-        client = Client(url="http://localhost:8080")
-        client.api_client.default_headers["Authorization"] = "Token 69fac4297124c52f01fddb0dde190f4e8b194862"
-        task15 = client.tasks.retrieve(15)
-        task15.import_annotations("COCO 1.0", str(OUT_PATH))
-        print("[+] Đã nạp thành công vào Task 15 trên CVAT! Xem tại: http://localhost:8080/tasks/15/jobs/15")
-    except Exception as e:
-        print(f"[!] Lỗi khi nạp vào CVAT: {e}")
+    auth_key = get_auth_key()
+    if auth_key:
+        print("[*] Đang nạp annotations vào Task 15 trên CVAT...")
+        try:
+            client = Client(url="http://localhost:8080")
+            client.api_client.default_headers["Authorization"] = f"Token {auth_key}"
+            task15 = client.tasks.retrieve(15)
+            task15.import_annotations("COCO 1.0", str(OUT_PATH))
+            print("[+] Đã nạp thành công vào Task 15 trên CVAT! Xem tại: http://localhost:8080/tasks/15/jobs/15")
+        except Exception as e:
+            print(f"[!] Lỗi khi nạp vào CVAT: {e}")
 
 
 if __name__ == "__main__":

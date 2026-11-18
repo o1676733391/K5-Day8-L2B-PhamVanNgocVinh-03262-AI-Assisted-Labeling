@@ -3,20 +3,38 @@ Chạy: python scripts/setup_cvat_tasks.py
 """
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from cvat_sdk import Client
 
 ROOT = Path(__file__).resolve().parent.parent
-TOKEN = "69fac4297124c52f01fddb0dde190f4e8b194862"
 CVAT_URL = "http://localhost:8080"
 PROJECT_NAME = "day08-03262"
 
 
+def get_auth_key():
+    val = os.environ.get("CVAT_TOKEN", "")
+    if val:
+        return val
+    try:
+        r = subprocess.run(
+            ["docker", "exec", "cvat_server", "python3", "-c",
+             "import django, os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cvat.settings.production'); "
+             "django.setup(); from rest_framework.authtoken.models import Token; print(Token.objects.first().key)"],
+            capture_output=True, text=True, check=True
+        )
+        return r.stdout.strip()
+    except Exception:
+        return ""
+
+
 def main():
+    auth_key = get_auth_key()
     print(f"[*] Kết nối tới CVAT tại {CVAT_URL}...")
     client = Client(url=CVAT_URL)
-    client.api_client.default_headers["Authorization"] = f"Token {TOKEN}"
+    if auth_key:
+        client.api_client.default_headers["Authorization"] = f"Token {auth_key}"
 
     # 1. Tìm hoặc tạo Project
     existing_projects = {p.name: p for p in client.projects.list()}
