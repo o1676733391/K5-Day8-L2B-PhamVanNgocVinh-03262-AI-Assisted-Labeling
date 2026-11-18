@@ -1,0 +1,177 @@
+{
+ "student": "03262",
+ "seed": 0,
+ "traps": [
+  {
+   "image": "img_014.jpg",
+   "type": "loose",
+   "orig_box": [
+    424.86,
+    377.74,
+    112.39,
+    164.04
+   ],
+   "bad_box": [
+    456.83,
+    342.37,
+    104.8,
+    185.26
+   ],
+   "cls": "motorbike",
+   "id": 136,
+   "ann_id": 135
+  },
+  {
+   "image": "img_008.jpg",
+   "type": "loose",
+   "orig_box": [
+    402.27,
+    153.16,
+    151.46,
+    171.53
+   ],
+   "bad_box": [
+    439.93,
+    129.81,
+    140.64,
+    185.54
+   ],
+   "cls": "person",
+   "id": 93,
+   "ann_id": 93
+  },
+  {
+   "image": "img_017.jpg",
+   "type": "extra",
+   "fake_box": [
+    119.25,
+    138.7,
+    97.43,
+    75.48
+   ],
+   "fake_cls": "truck",
+   "id": 427,
+   "ann_id": 151
+  },
+  {
+   "image": "img_013.jpg",
+   "type": "missing",
+   "orig_box": [
+    931.68,
+    86.72,
+    59.08,
+    78.69
+   ],
+   "orig_cls": "three_wheeler"
+  },
+  {
+   "image": "img_031.jpg",
+   "type": "missing",
+   "orig_box": [
+    902.88,
+    206.27,
+    120.94,
+    309.61
+   ],
+   "orig_cls": "person"
+  },
+  {
+   "image": "img_034.jpg",
+   "type": "missing",
+   "orig_box": [
+    368.44,
+    399.94,
+    16.59,
+    28.91
+   ],
+   "orig_cls": "motorbike"
+  },
+  {
+   "image": "img_027.jpg",
+   "type": "extra",
+   "fake_box": [
+    187.77,
+    169.8,
+    82.42,
+    117.29
+   ],
+   "fake_cls": "person",
+   "id": 428,
+   "ann_id": 310
+  },
+  {
+   "image": "img_006.jpg",
+   "type": "wrong_class",
+   "box": [
+    504.05,
+    310.14,
+    17.29,
+    31.75
+   ],
+   "orig_cls": "person",
+   "fake_cls": "bicycle",
+   "id": 81,
+   "ann_id": 81
+  },
+  {
+   "image": "img_022.jpg",
+   "type": "wrong_class",
+   "box": [
+    504.45,
+    259.06,
+    47.35,
+    80.65
+   ],
+   "orig_cls": "person",
+   "fake_cls": "bicycle",
+   "id": 226,
+   "ann_id": 227
+  },
+  {
+   "image": "img_018.jpg",
+   "type": "extra",
+   "fake_box": [
+    563.96,
+    229.31,
+    151.33,
+    181.92
+   ],
+   "fake_cls": "truck",
+   "id": 429,
+   "ann_id": 186
+  },
+  {
+   "image": "img_009.jpg",
+   "type": "loose",
+   "orig_box": [
+    54.29,
+    329.15,
+    110.4,
+    95.0
+   ],
+   "bad_box": [
+    78.51,
+    353.37,
+    105.84,
+    80.47
+   ],
+   "cls": "person",
+   "id": 96,
+   "ann_id": 96
+  },
+  {
+   "image": "img_023.jpg",
+   "type": "wrong_class",
+   "box": [
+    680.64,
+    237.92,
+    87.64,
+    225.79
+   ],
+   "orig_cls": "person",
+   "fake_cls": "bicycle",
+   "id": 239,
+   "ann_id": 240
+  }
+ ]
+}
